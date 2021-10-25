@@ -57,7 +57,13 @@
       "metadata": {
         "description": "Location for all resources."
       }
-    }
+    },
+    "appName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the function app that you wish to create."
+      }
+    }    
   },
   "functions": [],
   "variables": {
@@ -65,7 +71,12 @@
     "hostingPlanName": "[format('hostingplan{0}', uniqueString(resourceGroup().id))]",
     "websiteName": "[format('website{0}', uniqueString(resourceGroup().id))]",
     "sqlserverName": "[format('sqlServer{0}', uniqueString(resourceGroup().id))]",
-    "databaseName": "sampledb"
+    "databaseName": "calicotdb",
+    "functionAppName": "[parameters('appName')]",
+    "applicationInsightsName": "[format('AppInsights{0}', variables('websiteName'))]",
+    "storageAccountid": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+    "serviceBusNamespaceName": "[format('serviceBus{0}', uniqueString(resourceGroup().id))]",
+    "serviceBusQueueName": "[format('serviceBusQueue{0}', uniqueString(resourceGroup().id))]"
   },
   "resources": [
     {
@@ -91,7 +102,9 @@
         "displayName": "Database"
       },
       "sku": {
-        "name": "Basic"
+        "name": "Basic",
+        "tier": "Basic",
+        "capacity": 5
       },
       "properties": {
         "collation": "SQL_Latin1_General_CP1_CI_AS",
@@ -122,8 +135,9 @@
         "displayName": "HostingPlan"
       },
       "sku": {
-        "name": "[parameters('skuName')]",
-        "capacity": "[parameters('skuCapacity')]"
+        "capacity": "[parameters('skuCapacity')]",
+        "Tier": "Standard",
+        "Name": "S1"
       }
     },
     {
@@ -160,7 +174,7 @@
     {
       "type": "Microsoft.Insights/components",
       "apiVersion": "2020-02-02",
-      "name": "[format('AppInsights{0}', variables('websiteName'))]",
+      "name": "[variables('applicationInsightsName')]",
       "location": "[parameters('location')]",
       "tags": {
         "[format('hidden-link:{0}', resourceId('Microsoft.Web/sites', variables('websiteName')))]": "Resource",
@@ -171,7 +185,8 @@
         "Application_Type": "web"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Web/sites', variables('websiteName'))]"
+        "[resourceId('Microsoft.Web/sites', variables('websiteName'))]",
+        "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]"
       ]
     },
     {
@@ -180,12 +195,94 @@
       "name": "[variables('storageAccountName')]",
       "location": "[parameters('location')]",
       "sku": {
-        "name": "Standard_LRS"
+        "name": "Standard_LRS",
+        "tier": "Standard"
       },
       "kind": "StorageV2",
       "properties": {
-        "supportsHttpsTrafficOnly": true
+        "supportsHttpsTrafficOnly": true,
+        "accessTier": "Hot"
       }
+    },
+    {
+      "apiVersion": "2020-06-01",
+      "type": "Microsoft.Web/sites",
+      "name": "[variables('functionAppName')]",
+      "location": "[parameters('location')]",
+      "kind": "functionapp,linux",
+      "properties": {
+        "name": "[variables('functionAppName')]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+        "clientAffinityEnabled": false,
+        "siteConfig": {
+          "appSettings": [
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "dotnet"
+            },
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~2"
+            },
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2019-06-01').keys[0].value)]"
+            }
+          ]
+        },
+        "reserved": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+      ],
+      "resources": [
+        {
+          "apiVersion": "2018-11-01",
+          "name": "appsettings",
+          "type": "config",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]",
+            "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+          ],
+          "properties": {
+            "AzureWebJobsStorage": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';EndpointSuffix=', environment().suffixes.storage, ';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2019-06-01').keys[0].value)]",
+            "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), '2020-02-02-preview').InstrumentationKey]",
+            "FUNCTIONS_EXTENSION_VERSION": "~3"
+          }
+        }
+      ]
+    },
+    {
+      "type": "Microsoft.ServiceBus/namespaces",
+      "apiVersion": "2017-04-01",
+      "name": "[variables('serviceBusNamespaceName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.ServiceBus/namespaces/queues",
+      "apiVersion": "2017-04-01",
+      "name": "[format('{0}/{1}', variables('serviceBusNamespaceName'), variables('serviceBusQueueName'))]",
+      "properties": {
+        "lockDuration": "PT5M",
+        "maxSizeInMegabytes": 1024,
+        "requiresDuplicateDetection": false,
+        "requiresSession": false,
+        "defaultMessageTimeToLive": "P10675199DT2H48M5.4775807S",
+        "deadLetteringOnMessageExpiration": false,
+        "duplicateDetectionHistoryTimeWindow": "PT10M",
+        "maxDeliveryCount": 10,
+        "autoDeleteOnIdle": "P10675199DT2H48M5.4775807S",
+        "enablePartitioning": false,
+        "enableExpress": false
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ServiceBus/namespaces', variables('serviceBusNamespaceName'))]"
+      ]
     }
   ]
 }
