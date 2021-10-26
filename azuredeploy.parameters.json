@@ -2,14 +2,44 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
+    "storagePrefix": {
+      "value": "calicotdata"
+    },
+    "storageSKU": {
+      "value": "Standard_GRS"
+    },
+    "appServicePlanName": {
+      "value": "calicotplan"
+    },
+    "webAppName": {
+      "value": "calicotwebapp"
+    },
+    //"resourceTags": {
+    //  "value": {
+    //    "Environment": "Production",
+    //    "Project": "Tutorial"
+    //  }
+    //},
     "sqlAdministratorLogin": {
-      "value": "adminnkc"
+      "value": "admin_nkc"
     },
     "sqlAdministratorLoginPassword": {
       "value": "Tester*123456"
     },
-    "appName": {
-      "value": "thumbnails-func"
+    "transparentDataEncryption": {
+      "value": "Enabled"
+    },
+    "serviceBusNamespaceName": {
+      "value": "nkcNamespace"
+    },
+    "serviceBusQueueName": {
+      "value": "nkcQueue"
+    },
+    "appInsightsLocation": {
+      "value": "eastus"
     }
+    //,"serviceBusApiVersion": {
+    //  "value": "2017-04-01"
+    //}
   }
 }

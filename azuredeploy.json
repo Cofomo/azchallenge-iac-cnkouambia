@@ -1,55 +1,25 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
-  "metadata": {
-    "_generator": {
-      "name": "bicep",
-      "version": "0.4.1.14562",
-      "templateHash": "10516732518043384973"
-    }
-  },
   "parameters": {
-    "skuName": {
+    "storagePrefix": {
       "type": "string",
-      "defaultValue": "F1",
+      "minLength": 3,
+      "maxLength": 11
+    },
+    "storageSKU": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
       "allowedValues": [
-        "F1",
-        "D1",
-        "B1",
-        "B2",
-        "B3",
-        "S1",
-        "S2",
-        "S3",
-        "P1",
-        "P2",
-        "P3",
-        "P4"
-      ],
-      "metadata": {
-        "description": "Describes plan's pricing tier and instance size. Check details at https://azure.microsoft.com/en-us/pricing/details/app-service/"
-      }
-    },
-    "skuCapacity": {
-      "type": "int",
-      "defaultValue": 1,
-      "maxValue": 3,
-      "minValue": 1,
-      "metadata": {
-        "description": "Describes plan's instance count"
-      }
-    },
-    "sqlAdministratorLogin": {
-      "type": "string",
-      "metadata": {
-        "description": "The admin user of the SQL Server"
-      }
-    },
-    "sqlAdministratorLoginPassword": {
-      "type": "secureString",
-      "metadata": {
-        "description": "The password of the admin user of the SQL Server"
-      }
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Standard_ZRS",
+        "Premium_LRS",
+        "Premium_ZRS",
+        "Standard_GZRS",
+        "Standard_RAGZRS"
+      ]
     },
     "location": {
       "type": "string",
@@ -58,167 +28,185 @@
         "description": "Location for all resources."
       }
     },
-    "appName": {
+    "appServicePlanName": {
+      "type": "string",
+      "defaultValue": "exampleplan"
+    },
+    "webAppName": {
       "type": "string",
       "metadata": {
-        "description": "The name of the function app that you wish to create."
+        "description": "Base name of the resource such as web app name and app service plan "
+      },
+      "minLength": 2
+    },
+    "linuxFxVersion": {
+      "type": "string",
+      "defaultValue": "php|7.0",
+      "metadata": {
+        "description": "The Runtime stack of current web app"
       }
-    }    
+    },
+    "sqlAdministratorLogin": {
+      "type": "string",
+      "metadata": {
+        "description": "The administrator username of the SQL Server."
+      }
+    },
+    "sqlAdministratorLoginPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The administrator password of the SQL Server."
+      }
+    },
+    "transparentDataEncryption": {
+      "type": "string",
+      "allowedValues": [
+        "Enabled",
+        "Disabled"
+      ],
+      "defaultValue": "Enabled",
+      "metadata": {
+        "description": "Enable or disable Transparent Data Encryption (TDE) for the database."
+      }
+    },
+    "serviceBusNamespaceName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Service Bus namespace"
+      }
+    },
+    "serviceBusQueueName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Queue"
+      }
+    },
+    "appInsightsLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Location for Application Insights"
+      }
+    },
+    "nkc_funct_app_name": {
+      "defaultValue": "nkc-funct-app",
+      "type": "String"
+    }
   },
-  "functions": [],
   "variables": {
-    "storageAccountName": "[format('storage{0}', uniqueString(resourceGroup().id))]",
-    "hostingPlanName": "[format('hostingplan{0}', uniqueString(resourceGroup().id))]",
-    "websiteName": "[format('website{0}', uniqueString(resourceGroup().id))]",
-    "sqlserverName": "[format('sqlServer{0}', uniqueString(resourceGroup().id))]",
-    "databaseName": "calicotdb",
-    "functionAppName": "[parameters('appName')]",
-    "applicationInsightsName": "[format('AppInsights{0}', variables('websiteName'))]",
-    "storageAccountid": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
-    "serviceBusNamespaceName": "[format('serviceBus{0}', uniqueString(resourceGroup().id))]",
-    "serviceBusQueueName": "[format('serviceBusQueue{0}', uniqueString(resourceGroup().id))]"
+    "uniqueStorageName": "[concat(parameters('storagePrefix'), uniqueString(resourceGroup().id))]",
+    "webAppPortalName": "[concat(parameters('webAppName'), uniqueString(resourceGroup().id))]",
+    "sqlServerName": "[concat('sqlserver', uniqueString(subscription().id, resourceGroup().id))]",
+    "databaseName": "nkcapp-db",
+    "databaseEdition": "Basic",
+    "databaseCollation": "SQL_Latin1_General_CP1_CI_AS",
+    "databaseServiceObjectiveName": "Basic",
+    "defaultSASKeyName": "RootManageSharedAccessKey",
+    "authRuleResourceId": "[resourceId('Microsoft.ServiceBus/namespaces/authorizationRules', parameters('serviceBusNamespaceName'), variables('defaultSASKeyName'))]",
+    "sbVersion": "2017-04-01",
+    "storageAccountid": "[resourceId('Microsoft.Storage/storageAccounts', variables('uniqueStorageName'))]",
+    "applicationInsightsName": "[parameters('webAppName')]",
+    "hostingPlanName": "[concat('hpn-', resourceGroup().name)]"
   },
   "resources": [
     {
-      "type": "Microsoft.Sql/servers",
-      "apiVersion": "2021-02-01-preview",
-      "name": "[variables('sqlserverName')]",
-      "location": "[parameters('location')]",
-      "tags": {
-        "displayName": "SQL Server"
-      },
-      "properties": {
-        "administratorLogin": "[parameters('sqlAdministratorLogin')]",
-        "administratorLoginPassword": "[parameters('sqlAdministratorLoginPassword')]",
-        "version": "12.0"
-      }
-    },
-    {
-      "type": "Microsoft.Sql/servers/databases",
-      "apiVersion": "2021-02-01-preview",
-      "name": "[format('{0}/{1}', variables('sqlserverName'), variables('databaseName'))]",
-      "location": "[parameters('location')]",
-      "tags": {
-        "displayName": "Database"
-      },
+      "apiVersion": "2017-04-01",
+      "name": "[parameters('serviceBusNamespaceName')]",
+      "type": "Microsoft.ServiceBus/Namespaces",
+      "location": "[resourceGroup().location]",
       "sku": {
-        "name": "Basic",
-        "tier": "Basic",
-        "capacity": 5
+        "name": "Standard"
       },
-      "properties": {
-        "collation": "SQL_Latin1_General_CP1_CI_AS",
-        "maxSizeBytes": 1073741824
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Sql/servers', variables('sqlserverName'))]"
-      ]
-    },
-    {
-      "type": "Microsoft.Sql/servers/firewallRules",
-      "apiVersion": "2021-02-01-preview",
-      "name": "[format('{0}/{1}', variables('sqlserverName'), 'AllowAllWindowsAzureIps')]",
-      "properties": {
-        "endIpAddress": "0.0.0.0",
-        "startIpAddress": "0.0.0.0"
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Sql/servers', variables('sqlserverName'))]"
-      ]
-    },
-    {
-      "type": "Microsoft.Web/serverfarms",
-      "apiVersion": "2020-12-01",
-      "name": "[variables('hostingPlanName')]",
-      "location": "[parameters('location')]",
-      "tags": {
-        "displayName": "HostingPlan"
-      },
-      "sku": {
-        "capacity": "[parameters('skuCapacity')]",
-        "Tier": "Standard",
-        "Name": "S1"
-      }
-    },
-    {
-      "type": "Microsoft.Web/sites",
-      "apiVersion": "2020-12-01",
-      "name": "[variables('websiteName')]",
-      "location": "[parameters('location')]",
-      "tags": {
-        "[format('hidden-related:{0}', resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName')))]": "empty",
-        "displayName": "Website"
-      },
-      "properties": {
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]"
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]"
-      ]
-    },
-    {
-      "type": "Microsoft.Web/sites/config",
-      "apiVersion": "2020-12-01",
-      "name": "[format('{0}/{1}', variables('websiteName'), 'connectionstrings')]",
-      "properties": {
-        "DefaultConnection": {
-          "value": "[format('Data Source=tcp:{0},1433;Initial Catalog={1};User Id={2}@{3};Password={4};', reference(resourceId('Microsoft.Sql/servers', variables('sqlserverName'))).fullyQualifiedDomainName, variables('databaseName'), parameters('sqlAdministratorLogin'), reference(resourceId('Microsoft.Sql/servers', variables('sqlserverName'))).fullyQualifiedDomainName, parameters('sqlAdministratorLoginPassword'))]",
-          "type": "SQLAzure"
+      "properties": {},
+      "resources": [
+        {
+          "apiVersion": "2017-04-01",
+          "name": "[parameters('serviceBusQueueName')]",
+          "type": "Queues",
+          "dependsOn": [
+            "[concat('Microsoft.ServiceBus/namespaces/', parameters('serviceBusNamespaceName'))]"
+          ],
+          "properties": {
+            "lockDuration": "PT5M",
+            "maxSizeInMegabytes": "1024",
+            "requiresDuplicateDetection": "false",
+            "requiresSession": "false",
+            "defaultMessageTimeToLive": "P10675199DT2H48M5.4775807S",
+            "deadLetteringOnMessageExpiration": "false",
+            "duplicateDetectionHistoryTimeWindow": "PT10M",
+            "maxDeliveryCount": "10",
+            "autoDeleteOnIdle": "P10675199DT2H48M5.4775807S",
+            "enablePartitioning": "false",
+            "enableExpress": "false"
+          }
         }
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Sql/servers', variables('sqlserverName'))]",
-        "[resourceId('Microsoft.Web/sites', variables('websiteName'))]"
-      ]
-    },
-    {
-      "type": "Microsoft.Insights/components",
-      "apiVersion": "2020-02-02",
-      "name": "[variables('applicationInsightsName')]",
-      "location": "[parameters('location')]",
-      "tags": {
-        "[format('hidden-link:{0}', resourceId('Microsoft.Web/sites', variables('websiteName')))]": "Resource",
-        "displayName": "AppInsightsComponent"
-      },
-      "kind": "web",
-      "properties": {
-        "Application_Type": "web"
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Web/sites', variables('websiteName'))]",
-        "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]"
       ]
     },
     {
       "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2021-04-01",
-      "name": "[variables('storageAccountName')]",
+      "name": "[variables('uniqueStorageName')]",
       "location": "[parameters('location')]",
       "sku": {
-        "name": "Standard_LRS",
-        "tier": "Standard"
+        "name": "[parameters('storageSKU')]"
       },
       "kind": "StorageV2",
       "properties": {
-        "supportsHttpsTrafficOnly": true,
-        "accessTier": "Hot"
+        "supportsHttpsTrafficOnly": true
       }
     },
     {
-      "apiVersion": "2020-06-01",
-      "type": "Microsoft.Web/sites",
-      "name": "[variables('functionAppName')]",
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2020-12-01",
+      "name": "[parameters('appServicePlanName')]",
       "location": "[parameters('location')]",
-      "kind": "functionapp,linux",
+      "sku": {
+        "name": "B1",
+        "tier": "Basic",
+        "size": "B1",
+        "family": "B",
+        "capacity": 1
+      },
+      "kind": "linux",
       "properties": {
-        "name": "[variables('functionAppName')]",
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+        "perSiteScaling": false,
+        "reserved": true,
+        "targetWorkerCount": 0,
+        "targetWorkerSizeId": 0
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2020-12-01",
+      "name": "[variables('webAppPortalName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName'))]",
+        "[resourceId('microsoft.insights/components/', variables('applicationInsightsName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('uniqueStorageName'))]"
+      ],
+      "kind": "functionapp,app",
+      "properties": {
+        "name": "[variables('webAppPortalName')]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName'))]",
         "clientAffinityEnabled": false,
+        "hostNameSslStates": [
+          {
+            "name": "[concat(variables('webAppPortalName'), '.azurewebsites.net')]",
+            "sslState": "Disabled",
+            "hostType": "Standard"
+          },
+          {
+            "name": "[concat(variables('webAppPortalName'), '.scm.azurewebsites.net')]",
+            "sslState": "Disabled",
+            "hostType": "Repository"
+          }
+        ],
         "siteConfig": {
+          "linuxFxVersion": "[parameters('linuxFxVersion')]",
           "appSettings": [
             {
               "name": "FUNCTIONS_WORKER_RUNTIME",
-              "value": "dotnet"
+              "value": "python"
             },
             {
               "name": "FUNCTIONS_EXTENSION_VERSION",
@@ -226,63 +214,229 @@
             },
             {
               "name": "AzureWebJobsStorage",
-              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2019-06-01').keys[0].value)]"
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('uniqueStorageName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2019-06-01').keys[0].value)]"
+            }
+          ],
+          "numberOfWorkers": 1,
+          "acrUseManagedIdentityCreds": false,
+          "alwaysOn": false,
+          "http20Enabled": false,
+          "functionAppScaleLimit": 200,
+          "minimumElasticInstanceCount": 0
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites/basicPublishingCredentialsPolicies",
+      "apiVersion": "2021-01-15",
+      "name": "[concat(variables('webAppPortalName'), '/ftp')]",
+      "location": "Central US",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('webAppPortalName'))]"
+      ],
+      "properties": {
+        "allow": true
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites/basicPublishingCredentialsPolicies",
+      "apiVersion": "2021-01-15",
+      "name": "[concat(variables('webAppPortalName'), '/scm')]",
+      "location": "Central US",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('webAppPortalName'))]"
+      ],
+      "properties": {
+        "allow": true
+      }
+    },
+
+    {
+      "type": "Microsoft.Web/sites/config",
+      "apiVersion": "2021-01-15",
+      "name": "[concat(variables('webAppPortalName'), '/web')]",
+      "location": "Central US",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('webAppPortalName'))]"
+      ],
+      "properties": {
+        "numberOfWorkers": 1,
+        "defaultDocuments": [
+          "Default.htm",
+          "Default.html",
+          "Default.asp",
+          "index.htm",
+          "index.html",
+          "iisstart.htm",
+          "default.aspx",
+          "index.php"
+        ],
+        "netFrameworkVersion": "v4.0",
+        "phpVersion": "5.6",
+        "requestTracingEnabled": false,
+        "remoteDebuggingEnabled": false,
+        "httpLoggingEnabled": false,
+        "acrUseManagedIdentityCreds": false,
+        "logsDirectorySizeLimit": 35,
+        "detailedErrorLoggingEnabled": false,
+        "publishingUsername": "nkc-funct-app",
+        "scmType": "None",
+        "use32BitWorkerProcess": true,
+        "webSocketsEnabled": false,
+        "alwaysOn": false,
+        "managedPipelineMode": "Integrated",
+        "virtualApplications": [
+          {
+            "virtualPath": "/",
+            "physicalPath": "site\\wwwroot",
+            "preloadEnabled": false
+          }
+        ],
+        "loadBalancing": "LeastRequests",
+        "experiments": {
+          "rampUpRules": []
+        },
+        "autoHealEnabled": false,
+        "vnetRouteAllEnabled": false,
+        "vnetPrivatePortsCount": 0,
+        "localMySqlEnabled": false,
+        "ipSecurityRestrictions": [
+          {
+            "ipAddress": "Any",
+            "action": "Allow",
+            "priority": 1,
+            "name": "Allow all",
+            "description": "Allow all access"
+          }
+        ],
+        "scmIpSecurityRestrictions": [
+          {
+            "ipAddress": "Any",
+            "action": "Allow",
+            "priority": 1,
+            "name": "Allow all",
+            "description": "Allow all access"
+          }
+        ],
+        "scmIpSecurityRestrictionsUseMain": false,
+        "http20Enabled": false,
+        "minTlsVersion": "1.2",
+        "scmMinTlsVersion": "1.0",
+        "ftpsState": "AllAllowed",
+        "preWarmedInstanceCount": 0,
+        "functionAppScaleLimit": 200,
+        "functionsRuntimeScaleMonitoringEnabled": false,
+        "minimumElasticInstanceCount": 0,
+        "azureStorageAccounts": {}
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites/hostNameBindings",
+      "apiVersion": "2021-01-15",
+      "name": "[concat(variables('webAppPortalName'), '/', variables('webAppPortalName'), '.azurewebsites.net')]",
+      "location": "Central US",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('webAppPortalName'))]"
+      ],
+      "properties": {
+        "siteName": "nkc-funct-app",
+        "hostNameType": "Verified"
+      }
+    },
+    {
+      "type": "microsoft.insights/components",
+      "apiVersion": "2020-02-02-preview",
+      "name": "[variables('applicationInsightsName')]",
+      "location": "[parameters('appInsightsLocation')]",
+      "tags": {
+        "[concat('hidden-link:', resourceId('Microsoft.Web/sites', variables('applicationInsightsName')))]": "Resource"
+      },
+      "properties": {
+        "ApplicationId": "[variables('applicationInsightsName')]",
+        "Request_Source": "IbizaWebAppExtensionCreate"
+      }
+    },
+    {
+      "name": "[variables('sqlServerName')]",
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2020-02-02-preview",
+      "location": "[parameters('location')]",
+      "tags": {
+        "displayName": "SqlServer"
+      },
+      "properties": {
+        "administratorLogin": "[parameters('sqlAdministratorLogin')]",
+        "administratorLoginPassword": "[parameters('sqlAdministratorLoginPassword')]",
+        "version": "12.0"
+      },
+      "resources": [
+        {
+          "name": "[variables('databaseName')]",
+          "type": "databases",
+          "apiVersion": "2020-02-02-preview",
+          "location": "[parameters('location')]",
+          "tags": {
+            "displayName": "Database"
+          },
+          "properties": {
+            "edition": "[variables('databaseEdition')]",
+            "collation": "[variables('databaseCollation')]",
+            "requestedServiceObjectiveName": "[variables('databaseServiceObjectiveName')]"
+          },
+          "dependsOn": [
+            "[variables('sqlServerName')]"
+          ],
+          "resources": [
+            {
+              "comments": "Transparent Data Encryption",
+              "name": "current",
+              "type": "transparentDataEncryption",
+              "apiVersion": "2017-03-01-preview",
+              "properties": {
+                "status": "[parameters('transparentDataEncryption')]"
+              },
+              "dependsOn": [
+                "[variables('databaseName')]"
+              ]
             }
           ]
         },
-        "reserved": true
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
-      ],
-      "resources": [
         {
-          "apiVersion": "2018-11-01",
-          "name": "appsettings",
-          "type": "config",
-          "dependsOn": [
-            "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]",
-            "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
-          ],
+          "name": "AllowAllMicrosoftAzureIps",
+          "type": "firewallrules",
+          "apiVersion": "2020-02-02-preview",
+          "location": "[parameters('location')]",
           "properties": {
-            "AzureWebJobsStorage": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';EndpointSuffix=', environment().suffixes.storage, ';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2019-06-01').keys[0].value)]",
-            "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), '2020-02-02-preview').InstrumentationKey]",
-            "FUNCTIONS_EXTENSION_VERSION": "~3"
-          }
+            "endIpAddress": "0.0.0.0",
+            "startIpAddress": "0.0.0.0"
+          },
+          "dependsOn": [
+            "[variables('sqlServerName')]"
+          ]
         }
       ]
-    },
-    {
-      "type": "Microsoft.ServiceBus/namespaces",
-      "apiVersion": "2017-04-01",
-      "name": "[variables('serviceBusNamespaceName')]",
-      "location": "[parameters('location')]",
-      "sku": {
-        "name": "Standard"
-      },
-      "properties": {}
-    },
-    {
-      "type": "Microsoft.ServiceBus/namespaces/queues",
-      "apiVersion": "2017-04-01",
-      "name": "[format('{0}/{1}', variables('serviceBusNamespaceName'), variables('serviceBusQueueName'))]",
-      "properties": {
-        "lockDuration": "PT5M",
-        "maxSizeInMegabytes": 1024,
-        "requiresDuplicateDetection": false,
-        "requiresSession": false,
-        "defaultMessageTimeToLive": "P10675199DT2H48M5.4775807S",
-        "deadLetteringOnMessageExpiration": false,
-        "duplicateDetectionHistoryTimeWindow": "PT10M",
-        "maxDeliveryCount": 10,
-        "autoDeleteOnIdle": "P10675199DT2H48M5.4775807S",
-        "enablePartitioning": false,
-        "enableExpress": false
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.ServiceBus/namespaces', variables('serviceBusNamespaceName'))]"
-      ]
     }
-  ]
+  ],
+  "outputs": {
+    "storageEndpoint": {
+      "type": "object",
+      "value": "[reference(variables('uniqueStorageName')).primaryEndpoints]"
+    },
+    "sqlServerFqdn": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Sql/servers/', variables('sqlServerName'))).fullyQualifiedDomainName]"
+    },
+    "databaseName": {
+      "type": "string",
+      "value": "[variables('databaseName')]"
+    },
+    "NamespaceConnectionString": {
+      "type": "string",
+      "value": "[listkeys(variables('authRuleResourceId'), variables('sbVersion')).primaryConnectionString]"
+    },
+    "SharedAccessPolicyPrimaryKey": {
+      "type": "string",
+      "value": "[listkeys(variables('authRuleResourceId'), variables('sbVersion')).primaryKey]"
+    }
+  }
 }
