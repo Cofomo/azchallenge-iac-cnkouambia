@@ -145,7 +145,7 @@
       "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2021-04-01",
       "name": "[variables('uniqueStorageName')]",
-      "location": "[parameters('location')]",
+      "location": "[resourceGroup().location]",
       "sku": {
         "name": "[parameters('storageSKU')]"
       },
@@ -158,7 +158,7 @@
       "type": "Microsoft.Web/serverfarms",
       "apiVersion": "2020-12-01",
       "name": "[parameters('appServicePlanName')]",
-      "location": "[parameters('location')]",
+      "location": "[resourceGroup().location]",
       "sku": {
         "name": "B1",
         "tier": "Basic",
@@ -178,7 +178,7 @@
       "type": "Microsoft.Web/sites",
       "apiVersion": "2020-12-01",
       "name": "[variables('webAppPortalName')]",
-      "location": "[parameters('location')]",
+      "location": "[resourceGroup().location]",
       "dependsOn": [
         "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName'))]",
         "[resourceId('microsoft.insights/components/', variables('applicationInsightsName'))]",
@@ -230,7 +230,7 @@
       "type": "Microsoft.Web/sites/basicPublishingCredentialsPolicies",
       "apiVersion": "2021-01-15",
       "name": "[concat(variables('webAppPortalName'), '/ftp')]",
-      "location": "Central US",
+      "location": "[resourceGroup().location]",
       "dependsOn": [
         "[resourceId('Microsoft.Web/sites', variables('webAppPortalName'))]"
       ],
@@ -242,7 +242,7 @@
       "type": "Microsoft.Web/sites/basicPublishingCredentialsPolicies",
       "apiVersion": "2021-01-15",
       "name": "[concat(variables('webAppPortalName'), '/scm')]",
-      "location": "Central US",
+      "location": "[resourceGroup().location]",
       "dependsOn": [
         "[resourceId('Microsoft.Web/sites', variables('webAppPortalName'))]"
       ],
@@ -255,7 +255,7 @@
       "type": "Microsoft.Web/sites/config",
       "apiVersion": "2021-01-15",
       "name": "[concat(variables('webAppPortalName'), '/web')]",
-      "location": "Central US",
+      "location": "[resourceGroup().location]",
       "dependsOn": [
         "[resourceId('Microsoft.Web/sites', variables('webAppPortalName'))]"
       ],
@@ -334,7 +334,7 @@
       "type": "Microsoft.Web/sites/hostNameBindings",
       "apiVersion": "2021-01-15",
       "name": "[concat(variables('webAppPortalName'), '/', variables('webAppPortalName'), '.azurewebsites.net')]",
-      "location": "Central US",
+      "location": "[resourceGroup().location]",
       "dependsOn": [
         "[resourceId('Microsoft.Web/sites', variables('webAppPortalName'))]"
       ],
@@ -347,7 +347,7 @@
       "type": "microsoft.insights/components",
       "apiVersion": "2020-02-02-preview",
       "name": "[variables('applicationInsightsName')]",
-      "location": "[parameters('appInsightsLocation')]",
+      "location": "[resourceGroup().location]",
       "tags": {
         "[concat('hidden-link:', resourceId('Microsoft.Web/sites', variables('applicationInsightsName')))]": "Resource"
       },
@@ -360,7 +360,7 @@
       "name": "[variables('sqlServerName')]",
       "type": "Microsoft.Sql/servers",
       "apiVersion": "2020-02-02-preview",
-      "location": "[parameters('location')]",
+      "location": "[resourceGroup().location]",
       "tags": {
         "displayName": "SqlServer"
       },
@@ -374,7 +374,7 @@
           "name": "[variables('databaseName')]",
           "type": "databases",
           "apiVersion": "2020-02-02-preview",
-          "location": "[parameters('location')]",
+          "location": "[resourceGroup().location]",
           "tags": {
             "displayName": "Database"
           },
@@ -405,7 +405,7 @@
           "name": "AllowAllMicrosoftAzureIps",
           "type": "firewallrules",
           "apiVersion": "2020-02-02-preview",
-          "location": "[parameters('location')]",
+          "location": "[resourceGroup().location]",
           "properties": {
             "endIpAddress": "0.0.0.0",
             "startIpAddress": "0.0.0.0"
