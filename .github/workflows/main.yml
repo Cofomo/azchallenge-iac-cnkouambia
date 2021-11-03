@@ -5,12 +5,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Set env vars (dev)
+      if: github.event_name == 'push'
       run: |
         echo "AZURE_RG_NAME=AZURE_RG_DEV" >> $GITHUB_ENV
     - name: Set env vars (accept)
+      if: github.event_name == 'push'
       run: |
          echo "AZURE_RG_NAME=AZURE_RG_ACC" >> $GITHUB_ENV        
     - name: Set env vars (prod)        
+      if: github.event_name == 'push'
       run: |
          echo "AZURE_RG_NAME=AZURE_RG_PROD" >> $GITHUB_ENV         
           
