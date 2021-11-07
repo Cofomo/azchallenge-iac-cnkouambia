@@ -1,19 +1,10 @@
 on: [push]
-name: NKC Azure ARM
+name: NKC Azure ARM DEV
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-    - name: Set env vars (dev)
-      run: |
-        echo "AZURE_RG_NAME=AZURE_RG_DEV" >> $GITHUB_ENV
-    - name: Set env vars (accept)
-      run: |
-         echo "AZURE_RG_NAME=AZURE_RG_ACC" >> $GITHUB_ENV        
-    - name: Set env vars (prod)        
-      run: |
-         echo "AZURE_RG_NAME=AZURE_RG_PROD" >> $GITHUB_ENV         
-          
+
       # Checkout code
     - uses: actions/checkout@main
 
@@ -27,7 +18,7 @@ jobs:
       uses: azure/arm-deploy@v1
       with:
         subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION }}
-        resourceGroupName: ${{ secrets[env.AZURE_RG_NAME] }}
+        resourceGroupName: ${{ secrets.AZURE_RG_DEV }}
         template: ./azuredeploy.json
         parameters: ./azuredeploy.parameters.json
 
