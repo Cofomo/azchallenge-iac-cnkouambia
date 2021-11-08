@@ -7,12 +7,12 @@
     },
     "storageSKU": {
       "value": "Standard_GRS"
-    },
-    "appServicePlanName": {
-      "value": "calicotplan"
-    },
+    },    
     "webAppName": {
       "value": "calicotwebapp"
+    },
+    "functionAppName": {
+      "value": "calicotfunctapp"
     },
     "sqlAdministratorLogin": {
       "value": "admin_nkc"
@@ -31,6 +31,6 @@
     },
     "appInsightsLocation": {
       "value": "eastus"
-    }   
+    }
   }
 }
