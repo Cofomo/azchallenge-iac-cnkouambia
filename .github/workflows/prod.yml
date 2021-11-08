@@ -1,8 +1,10 @@
+
 on: [push]
-name: NKC Azure ARM PRODUCTION
+name: NKC Azure ARM PROD
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    environment: Production    
     steps:
 
       # Checkout code
@@ -18,7 +20,7 @@ jobs:
       uses: azure/arm-deploy@v1
       with:
         subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION }}
-        resourceGroupName: ${{ secrets.AZURE_RG_PROD }}
+        resourceGroupName: ${{ secrets.AZURE_RG }}
         template: ./azuredeploy.json
         parameters: ./azuredeploy.parameters.json
 
