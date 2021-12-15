@@ -6,8 +6,8 @@
       "value": "calicotdata"
     },
     "storageSKU": {
-      "value": "Standard_GRS"
-    },    
+      "value": "Standard_LRS"
+    },
     "webAppName": {
       "value": "calicotwebapp"
     },
@@ -28,9 +28,6 @@
     },
     "serviceBusQueueName": {
       "value": "nkcQueue"
-    },
-    "appInsightsLocation": {
-      "value": "eastus"
     }
   }
 }

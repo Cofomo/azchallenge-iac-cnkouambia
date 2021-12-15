@@ -83,12 +83,6 @@
         "description": "Name of the Queue"
       }
     },
-    "appInsightsLocation": {
-      "type": "string",
-      "metadata": {
-        "description": "Location for Application Insights"
-      }
-    },
     "functionAppName": {
       "type": "string",
       "defaultValue": "[concat('fnapp', uniqueString(resourceGroup().id))]",
@@ -121,7 +115,6 @@
     "defaultSASKeyName": "RootManageSharedAccessKey",
     "sbVersion": "2017-04-01",
     "storageAccountid": "[resourceId('Microsoft.Storage/storageAccounts', variables('uniqueStorageName'))]",
-    "applicationInsightsName": "[concat(parameters('webAppName'), uniqueString(resourceGroup().id))]",
     "hostingPlanName": "[concat('hpn-', resourceGroup().name)]",
     "hpNameFuncApp": "[concat('hpnfctapp-', resourceGroup().name)]",
     "functionAppName": "[concat(parameters('functionAppName'), uniqueString(resourceGroup().id))]",
@@ -184,7 +177,7 @@
       "name": "[variables('uniqueStorageName')]",
       "location": "[parameters('location')]",
       "sku": {
-        "name": "[parameters('storageSKU')]"
+        "name": "Standard_LRS"
       },
       "kind": "StorageV2",
       "properties": {
@@ -250,7 +243,6 @@
       "location": "[parameters('location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
-        "[resourceId('microsoft.insights/components/', variables('applicationInsightsName'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('uniqueStorageName'))]"
       ],
       "kind": "app",
@@ -353,19 +345,6 @@
       }
     },
     {
-      "type": "microsoft.insights/components",
-      "apiVersion": "2020-02-02-preview",
-      "name": "[variables('applicationInsightsName')]",
-      "location": "[parameters('appInsightsLocation')]",
-      "tags": {
-        "[concat('hidden-link:', resourceId('Microsoft.Web/sites', variables('applicationInsightsName')))]": "Resource"
-      },
-      "properties": {
-        "ApplicationId": "[variables('applicationInsightsName')]",
-        "Request_Source": "IbizaWebAppExtensionCreate"
-      }
-    },
-    {
       "name": "[variables('sqlServerName')]",
       "type": "Microsoft.Sql/servers",
       "apiVersion": "2020-02-02-preview",
@@ -463,10 +442,6 @@
             {
               "name": "WEBSITE_NODE_DEFAULT_VERSION",
               "value": "~10"
-            },
-            {
-              "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
-              "value": "[reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), '2020-02-02-preview').InstrumentationKey]"
             },
             {
               "name": "FUNCTIONS_WORKER_RUNTIME",
