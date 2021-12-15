@@ -34,14 +34,7 @@
         "description": "Base name of the resource such as web app name and app service plan "
       },
       "minLength": 2
-    },
-    "linuxFxVersion": {
-      "type": "string",
-      "defaultValue": "php|7.0",
-      "metadata": {
-        "description": "The Runtime stack of current web app"
-      }
-    },
+    },    
     "sqlAdministratorLogin": {
       "type": "string",
       "metadata": {
@@ -177,7 +170,6 @@
         "family": "B",
         "capacity": 1
       },
-      "kind": "linux",
       "properties": {
         "perSiteScaling": false,
         "reserved": true,
@@ -213,7 +205,6 @@
           }
         ],
         "siteConfig": {
-          "linuxFxVersion": "[parameters('linuxFxVersion')]",
           "appSettings": [
             {
               "name": "FUNCTIONS_WORKER_RUNTIME",
