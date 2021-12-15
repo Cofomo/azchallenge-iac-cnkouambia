@@ -123,6 +123,7 @@
     "storageAccountid": "[resourceId('Microsoft.Storage/storageAccounts', variables('uniqueStorageName'))]",
     "applicationInsightsName": "[concat(parameters('webAppName'), uniqueString(resourceGroup().id))]",
     "hostingPlanName": "[concat('hpn-', resourceGroup().name)]",
+    "hpNameFuncApp": "[concat('hpnfctapp-', resourceGroup().name)]",
     "functionAppName": "[concat(parameters('functionAppName'), uniqueString(resourceGroup().id))]",
     "functionWorkerRuntime": "[parameters('runtime')]",
     "configReference": {
@@ -196,17 +197,50 @@
       "name": "[variables('hostingPlanName')]",
       "location": "[parameters('location')]",
       "sku": {
-        "name": "B1",
-        "tier": "Basic",
-        "size": "B1",
-        "family": "B",
-        "capacity": 1
+        "name": "F1",
+        "tier": "Free",
+        "size": "F1",
+        "family": "F",
+        "capacity": 0
       },
+      "kind": "app",
       "properties": {
         "perSiteScaling": false,
-        "reserved": true,
+        "elasticScaleEnabled": false,
+        "maximumElasticWorkerCount": 1,
+        "isSpot": false,
+        "reserved": false,
+        "isXenon": false,
+        "hyperV": false,
         "targetWorkerCount": 0,
-        "targetWorkerSizeId": 0
+        "targetWorkerSizeId": 0,
+        "zoneRedundant": false
+      }
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2020-12-01",
+      "name": "[variables('hpNameFuncApp')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Y1",
+        "tier": "Dynamic",
+        "size": "Y1",
+        "family": "Y",
+        "capacity": 0
+      },
+      "kind": "app",
+      "properties": {
+        "perSiteScaling": false,
+        "elasticScaleEnabled": false,
+        "maximumElasticWorkerCount": 1,
+        "isSpot": false,
+        "reserved": false,
+        "isXenon": false,
+        "hyperV": false,
+        "targetWorkerCount": 0,
+        "targetWorkerSizeId": 0,
+        "zoneRedundant": false
       }
     },
     {
@@ -225,7 +259,7 @@
         "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
         "siteConfig": "[variables('configReference')[parameters('language')]]"
       }
-    },    
+    },
     {
       "type": "Microsoft.Web/sites/config",
       "apiVersion": "2021-01-15",
@@ -350,6 +384,11 @@
           "type": "databases",
           "apiVersion": "2020-02-02-preview",
           "location": "[parameters('location')]",
+          "sku": {
+            "name": "Basic",
+            "tier": "Basic",
+            "capacity": 5
+          },
           "tags": {
             "displayName": "Database"
           },
@@ -398,11 +437,11 @@
       "location": "[parameters('location')]",
       "kind": "functionapp",
       "dependsOn": [
-        "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+        "[resourceId('Microsoft.Web/serverfarms', variables('hpNameFuncApp'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('uniqueStorageName'))]"
       ],
       "properties": {
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hpNameFuncApp'))]",
         "siteConfig": {
           "appSettings": [
             {
@@ -450,6 +489,6 @@
     "databaseName": {
       "type": "string",
       "value": "[variables('databaseName')]"
-    }    
+    }
   }
 }
