@@ -36,16 +36,17 @@
 				$item | Should -not -BeNullOrEmpty
 			}	
 			
-			It 'Verifier quun App Service Plan existe dans le RG de SKU B1 dans la location Cananda Central' {
+			It 'Verifier quun App Service Plan existe dans le RG de SKU F1 - Y1 dans la location Cananda Central' {
 				$azserviceplan = Get-AzAppServicePlan -ResourceGroupName $_	
-				$azserviceplan.Location | Should -Be "Canada Central"
-				$azserviceplan.Sku.name | Should -Be "B1"
+				$azserviceplan.Location.Count | Should -Be 2
+				$azserviceplan.Sku.Name | should -Contain 'F1'
+				$azserviceplan.Sku.Name | should -Contain 'Y1'
 			}
 
-			It 'Verifier que le Azure Storage Account existe et de type StorageV2 - GRS et Hot Tier' {
+			It 'Verifier que le Azure Storage Account existe et de type StorageV2 - LRS et Hot Tier' {
 				$storage = Get-AzStorageAccount -ResourceGroupName $_
 				$storage.kind | Should -Be "StorageV2"
-				$storage.Sku.Name | Should -Be "Standard_GRS"
+				$storage.Sku.Name | Should -Be "Standard_LRS"
 				$storage.location | Should -Be "CanadaCentral"
 				$storage.AccessTier | Should -Be "Hot"
 			}
@@ -68,7 +69,7 @@
 				$azfunctionapp.Location | Should -Be "Canada Central"
 				$azfunctionapp.AppServicePlan | Should -not -BeNullOrEmpty
 				$azfunctionapp.Status | Should -Be 'Running'
-				$azfunctionapp.OSType | Should -Be 'Linux'
+				$azfunctionapp.OSType | Should -Be 'Windows'
 			}
 
 			It 'Verifier quune base de données existe dans le RG avec un nom donné en statut online et Sku GEN5' {
@@ -77,7 +78,7 @@
 				$azsqldb.Location | Should -Be "CanadaCentral"
 				$azsqldb.DatabaseName | Should -Be 'nkcapp-db'
 				$azsqldb.Status | Should -Be 'Online'
-				$azsqldb.SkuName | Should -Be 'Gp_Gen5'
+				$azsqldb.SkuName | Should -Be 'Basic'
 			}
 		}
 	}	
