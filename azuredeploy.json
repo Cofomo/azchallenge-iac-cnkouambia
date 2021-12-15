@@ -120,23 +120,12 @@
     "functionAppName": "[concat(parameters('functionAppName'), uniqueString(resourceGroup().id))]",
     "functionWorkerRuntime": "[parameters('runtime')]",
     "configReference": {
-      ".net": {
-        "comments": ".Net app. No additional configuration needed."
-      },
-      "html": {
-        "comments": "HTML app. No additional configuration needed."
-      },
-      "php": {
-        "phpVersion": "7.4"
-      },
-      "node": {
-        "appSettings": [
-          {
-            "name": "WEBSITE_NODE_DEFAULT_VERSION",
-            "value": "12.15.0"
-          }
-        ]
-      }
+      "numberOfWorkers": 1,
+      "acrUseManagedIdentityCreds": false,
+      "alwaysOn": false,
+      "http20Enabled": false,
+      "functionAppScaleLimit": 0,
+      "minimumElasticInstanceCount": 0
     }
   },
   "resources": [
@@ -247,14 +236,51 @@
       ],
       "kind": "app",
       "properties": {
+        "enabled": true,
+        "hostNameSslStates": [
+          {
+            "name": "[concat(variables('webAppPortalName'), '.azurewebsites.net')]",
+            "sslState": "Disabled",
+            "hostType": "Standard"
+          },
+          {
+            "name": "[concat(variables('webAppPortalName'), '.scm.azurewebsites.net')]",
+            "sslState": "Disabled",
+            "hostType": "Repository"
+          }
+        ],
         "name": "[variables('webAppPortalName')]",
         "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
-        "siteConfig": "[variables('configReference')[parameters('language')]]"
+        "siteConfig": "[variables('configReference')]"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites/basicPublishingCredentialsPolicies",
+      "apiVersion": "2021-02-01",
+      "name": "[concat(variables('webAppPortalName'), '/ftp')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('webAppPortalName'))]"
+      ],
+      "properties": {
+        "allow": true
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites/basicPublishingCredentialsPolicies",
+      "apiVersion": "2021-02-01",
+      "name": "[concat(variables('webAppPortalName'), '/scm')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('webAppPortalName'))]"
+      ],
+      "properties": {
+        "allow": true
       }
     },
     {
       "type": "Microsoft.Web/sites/config",
-      "apiVersion": "2021-01-15",
+      "apiVersion": "2021-02-01",
       "name": "[concat(variables('webAppPortalName'), '/web')]",
       "location": "[parameters('location')]",
       "dependsOn": [
@@ -270,17 +296,17 @@
           "index.html",
           "iisstart.htm",
           "default.aspx",
-          "index.php"
+          "index.php",
+          "hostingstart.html"
         ],
         "netFrameworkVersion": "v4.0",
-        "phpVersion": "5.6",
         "requestTracingEnabled": false,
         "remoteDebuggingEnabled": false,
         "httpLoggingEnabled": false,
         "acrUseManagedIdentityCreds": false,
         "logsDirectorySizeLimit": 35,
         "detailedErrorLoggingEnabled": false,
-        "publishingUsername": "nkc-funct-app",
+        "publishingUsername": "$webappnkc",
         "scmType": "None",
         "use32BitWorkerProcess": true,
         "webSocketsEnabled": false,
@@ -325,7 +351,7 @@
         "scmMinTlsVersion": "1.0",
         "ftpsState": "AllAllowed",
         "preWarmedInstanceCount": 0,
-        "functionAppScaleLimit": 200,
+        "functionAppScaleLimit": 0,
         "functionsRuntimeScaleMonitoringEnabled": false,
         "minimumElasticInstanceCount": 0,
         "azureStorageAccounts": {}
@@ -333,14 +359,14 @@
     },
     {
       "type": "Microsoft.Web/sites/hostNameBindings",
-      "apiVersion": "2021-01-15",
+      "apiVersion": "2021-02-01",
       "name": "[concat(variables('webAppPortalName'), '/', variables('webAppPortalName'), '.azurewebsites.net')]",
       "location": "[parameters('location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Web/sites', variables('webAppPortalName'))]"
       ],
       "properties": {
-        "siteName": "nkc-funct-app",
+        "siteName": "webappnkc",
         "hostNameType": "Verified"
       }
     },
